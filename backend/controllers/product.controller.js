@@ -1,7 +1,7 @@
 const Product = require('../models/product.model');
 const Category = require('../models/category.model');
 const Cart = require('../models/cart.model');
-const User = require('../models/User.model');
+const User = require('../models/user.model');
 
 const listProducts = async (req, res) => {
   try {
@@ -32,7 +32,7 @@ const listProducts = async (req, res) => {
     const bestSellers = await Product.find({}).sort({ sold: -1 }).limit(12);
     const newArrivals = await Product.find({}).sort({ createdAt: -1 }).limit(12);
 
-    res.render('index', {
+    res.json({
       error_momo,
       NoSignIn,
       Top12ProductBestSellers: bestSellers,
@@ -40,7 +40,7 @@ const listProducts = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
@@ -50,14 +50,14 @@ const shop = async (req, res) => {
     const products = await Product.find({ isActive: 1 }).limit(12);
     const categories = await Category.find();
 
-    res.render('shop', {
+    res.json({
       TotalPro: totalProducts,
       listProduct: products,
       listCategory: categories,
       search_input: req.session.search_input || '',
     });
   } catch (err) {
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
@@ -70,7 +70,7 @@ const shopPage = async (req, res) => {
     const categories = await Category.find();
     const totalProducts = await Product.countDocuments();
 
-    res.render('shop', {
+    res.json({
       TotalPro: totalProducts,
       listProduct: products,
       listCategory: categories,
@@ -78,29 +78,29 @@ const shopPage = async (req, res) => {
       user_Name: req.session.acc?.user_name || null,
     });
   } catch (err) {
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 const productDetail = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate('category');
-    if (!product) return res.redirect('/home');
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
     const relatedProduct = await Product.find({
       category: product.category._id,
       _id: { $ne: product._id },
     }).limit(4);
 
-    res.render('shop-details', { product, relatedProduct });
+    res.json({ product, relatedProduct });
   } catch (err) {
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 const search = (req, res) => {
   req.session.search_input = req.body['search-input'];
-  return res.redirect('/search/0');
+  return res.json({ message: 'Search input saved', search_input: req.session.search_input });
 };
 
 const searchPage = async (req, res) => {
@@ -111,10 +111,10 @@ const searchPage = async (req, res) => {
 
     if (!searchInput) {
       const categories = await Category.find();
-      return res.render('shop', {
+      return res.json({
         TotalPro: 0,
         search_input: null,
-        listProduct: null,
+        listProduct: [],
         listCategory: categories,
         noPageable: 'search',
       });
@@ -126,7 +126,7 @@ const searchPage = async (req, res) => {
       .limit(pageSize);
     const categories = await Category.find();
 
-    res.render('shop', {
+    res.json({
       TotalPro: totalMatch.length,
       search_input: searchInput,
       listProduct: products,
@@ -135,12 +135,12 @@ const searchPage = async (req, res) => {
       pageSearch: 'pageSearch',
     });
   } catch (err) {
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 const blogDetails = (req, res) => {
-  res.render('blog-details');
+  res.json({ message: 'Blog details placeholder' });
 };
 
 module.exports = {

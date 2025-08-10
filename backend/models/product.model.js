@@ -7,11 +7,12 @@ const productSchema = new mongoose.Schema(
     sold: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     is_Selling: { type: Boolean, default: true },
-    created_At: { type: Date, default: Date.now },
     price: { type: Number, required: true },
     quantity: { type: Number, required: true },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
-    productImage: [{ type: String }], // URLs or filenames
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    productImages: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'ProductImage' }
+    ] // liên kết tới bảng ảnh
   },
   { timestamps: true }
 );

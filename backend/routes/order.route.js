@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const orderController = require("../controllers/order.controller");
-const authMiddleware = require("../middlewares/auth.middleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.use(authMiddleware.verifyToken);
+router.use(authMiddleware); 
 
-router.get("/", orderController.getUserOrders);
+router.get("/", orderController.getAllOrders);
 router.post("/", orderController.createOrder);
 router.get("/:id", orderController.getOrderById);
 

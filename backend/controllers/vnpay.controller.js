@@ -1,5 +1,5 @@
 // controllers/vnpay.controller.js
-const vnpay = require("../config/vnpayConfig");
+const vnpay = require("../config/vnpay.config");
 const dateFormat = require("dateformat");
 const qs = require("qs");
 

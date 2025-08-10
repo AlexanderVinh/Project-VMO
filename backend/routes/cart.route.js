@@ -1,13 +1,17 @@
 const express = require("express");
 const router = express.Router();
+
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
 const cartController = require("../controllers/cart.controller");
-const authMiddleware = require("../middlewares/auth.middleware");
 
-router.use(authMiddleware.verifyToken); // Bảo vệ toàn bộ route
+router.get("/", authMiddleware, cartController.getCartView);
+router.post("/", authMiddleware, cartController.addToCartPost);
+router.put("/:itemId", authMiddleware, cartController.updateCart);
+router.delete("/:itemId", authMiddleware, cartController.deleteCart);
 
-router.get("/", cartController.getUserCart);
-router.post("/", cartController.addToCart);
-router.put("/:id", cartController.updateCartItem);
-router.delete("/:id", cartController.removeCartItem);
+// Nếu bạn có hàm clearCart và getAllCarts, dùng adminMiddleware cho route admin
+// router.delete("/", authMiddleware, cartController.clearCart);
+// router.get("/all", authMiddleware, adminMiddleware, cartController.getAllCarts);
 
 module.exports = router;
