@@ -8,7 +8,8 @@ const cartController = require("../controllers/cart.controller");
 router.get("/", authMiddleware, cartController.getCartView);
 router.post("/", authMiddleware, cartController.addToCartPost);
 router.put("/:itemId", authMiddleware, cartController.updateCart);
-router.delete("/:itemId", authMiddleware, cartController.deleteCart);
+router.delete("/:id", authMiddleware, cartController.deleteCart);
+
 
 // Nếu bạn có hàm clearCart và getAllCarts, dùng adminMiddleware cho route admin
 // router.delete("/", authMiddleware, cartController.clearCart);

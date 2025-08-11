@@ -2,14 +2,11 @@ const Cart = require('../models/cart.model');
 const Product = require('../models/product.model');
 const Size = require('../models/size.model');
 
-// GET /cart
+// GET /cart - xem giỏ hàng
 exports.getCartView = async (req, res) => {
   try {
-    const user = req.session.user;
-    if (!user) {
-      req.session.NoSignIn = 'Vui lòng đăng nhập trước khi thực hiện thao tác';
-      return res.redirect('/home');
-    }
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Bạn chưa đăng nhập' });
 
     const listCart = await Cart.find({ user: user._id })
       .populate('product')
@@ -20,124 +17,66 @@ exports.getCartView = async (req, res) => {
       total += item.count * item.product.price;
     });
 
-    req.session.listCart = listCart;
-    req.session.Total = total;
-
-    // Nếu là API trả JSON:
-    // return res.json({ total, listCart });
-    // Nếu render view:
-    return res.render('shopping-cart', { Total: total, listCart });
+    res.json({ total, listCart });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };
 
-// GET /deleteCart/:id
+// DELETE /cart/:id - xóa món hàng trong giỏ
 exports.deleteCart = async (req, res) => {
   try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Bạn chưa đăng nhập' });
+
     const { id } = req.params;
-    const referer = req.get('Referer') || '/';
-    const user = req.session.user;
+    const deleted = await Cart.findOneAndDelete({ _id: id, user: user._id });
 
-    if (!user) {
-      return res.redirect(referer);
-    }
+    if (!deleted) return res.status(404).json({ message: 'Món hàng không tồn tại hoặc không thuộc bạn' });
 
-    await Cart.findByIdAndDelete(id);
-
-    const listCart = await Cart.find({ user: user._id });
-    req.session.countCart = listCart.length;
-
-    res.redirect('/cart');
+    res.json({ message: 'Xóa món hàng thành công' });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };
 
-// POST /updateCart
+// PUT /cart/:id - cập nhật số lượng, size món hàng
 exports.updateCart = async (req, res) => {
   try {
-    const listCart = req.session.listCart || [];
-    let i = 0;
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Bạn chưa đăng nhập' });
 
-    for (let cartItem of listCart) {
-      const count = parseInt(req.body[`count${i}`], 10);
-      const sizeId = req.body[`size${i}`];
+    const { id } = req.params;
+    const { count, size_id } = req.body;
 
-      const size = await Size.findById(sizeId);
+    const size = size_id ? await Size.findById(size_id) : null;
+    if (size_id && !size) return res.status(400).json({ message: 'Size không hợp lệ' });
 
-      await Cart.findByIdAndUpdate(cartItem._id, {
-        count,
-        size: size ? size._id : cartItem.size
-      });
+    const cartItem = await Cart.findOne({ _id: id, user: user._id });
+    if (!cartItem) return res.status(404).json({ message: 'Món hàng không tồn tại hoặc không thuộc bạn' });
 
-      i++;
-    }
+    cartItem.count = parseInt(count, 10) || cartItem.count;
+    cartItem.size = size ? size._id : cartItem.size;
 
-    res.redirect('/cart');
+    await cartItem.save();
+
+    res.json({ message: 'Cập nhật giỏ hàng thành công', cartItem });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };
 
-// GET /addToCart/:id/:sizeId
-exports.addToCart = async (req, res) => {
-  try {
-    const { id, sizeId } = req.params;
-    const referer = req.get('Referer') || '/';
-    const user = req.session.user;
-
-    if (!user) {
-      req.session.AddToCartErr = 'Please signin before proceeding to cart';
-      return res.redirect(referer);
-    }
-
-    let cartItem = await Cart.findOne({ user: user._id, product: id, size: sizeId });
-
-    if (cartItem) {
-      cartItem.count += 1;
-      await cartItem.save();
-    } else {
-      const product = await Product.findById(id);
-      const size = await Size.findById(sizeId);
-
-      if (!product) {
-        return res.redirect(referer);
-      }
-
-      const newCart = new Cart({
-        count: 1,
-        product: product._id,
-        size: size ? size._id : null,
-        user: user._id
-      });
-      await newCart.save();
-    }
-
-    const listCart = await Cart.find({ user: user._id });
-    req.session.countCart = listCart.length;
-
-    res.redirect(referer);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Server error');
-  }
-};
-
-// POST /addToCart
+// POST /cart - thêm sản phẩm vào giỏ hàng
 exports.addToCartPost = async (req, res) => {
   try {
-    const { product_id, size_id, count } = req.body;
-    const referer = req.get('Referer') || '/';
-    const user = req.session.user;
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Bạn chưa đăng nhập' });
 
-    if (!user) {
-      req.session.AddToCartErr = 'Please signin before proceeding to cart';
-      return res.redirect(referer);
-    }
+    const { product_id, size_id, count } = req.body;
+    if (!product_id || !count) return res.status(400).json({ message: 'Thiếu thông tin sản phẩm hoặc số lượng' });
 
     let cartItem = await Cart.findOne({ user: user._id, product: product_id, size: size_id });
 
@@ -146,27 +85,23 @@ exports.addToCartPost = async (req, res) => {
       await cartItem.save();
     } else {
       const product = await Product.findById(product_id);
-      const size = await Size.findById(size_id);
+      if (!product) return res.status(400).json({ message: 'Sản phẩm không tồn tại' });
 
-      if (!product) {
-        return res.redirect(referer);
-      }
+      const size = size_id ? await Size.findById(size_id) : null;
 
       const newCart = new Cart({
-        count: parseInt(count, 10),
+        user: user._id,
         product: product._id,
         size: size ? size._id : null,
-        user: user._id
+        count: parseInt(count, 10)
       });
       await newCart.save();
     }
 
     const listCart = await Cart.find({ user: user._id });
-    req.session.countCart = listCart.length;
-
-    res.redirect(referer);
+    res.json({ message: 'Thêm giỏ hàng thành công', cartCount: listCart.length });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };
