@@ -12,7 +12,7 @@ router.delete("/users/:id", authMiddleware, adminMiddleware, adminController.del
 router.get("/products", authMiddleware, adminMiddleware, adminController.getAllProducts);
 router.delete("/products/:id", authMiddleware, adminMiddleware, adminController.deleteProduct);
 
-// Orders
+// Orders (admin)
 router.get("/orders", authMiddleware, adminMiddleware, adminController.getAllOrders);
 router.put("/orders/:id/status", authMiddleware, adminMiddleware, adminController.updateOrderStatus);
 

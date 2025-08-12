@@ -1,69 +1,42 @@
+// models/order.model.js
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema(
   {
-    total: {
-      type: Number,
-      required: true,
+    user: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User', 
+      required: true 
     },
-    booking_Date: {
-      type: Date,
-      default: Date.now,
-    },
-    payment_Method: {
-      type: String,
-      default: 'COD', // Có thể là "COD", "VNPay", "Paypal", ...
-      trim: true,
-    },
-    status: {
-      type: String,
-      default: 'Pending', // Pending, Confirmed, Shipping, Delivered, Cancelled
-      trim: true,
-    },
-    fullname: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    country: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    address: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    phone: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    note: {
-      type: String,
-      trim: true,
-    },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    order_Item: [
+    items: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'OrderItem',
-      },
+        product: { 
+          type: mongoose.Schema.Types.ObjectId, 
+          ref: 'Product', 
+          required: true 
+        },
+        size: { 
+          type: mongoose.Schema.Types.ObjectId, 
+          ref: 'Size', 
+          required: true 
+        },
+        count: { 
+          type: Number, 
+          required: true 
+        }
+      }
     ],
+    totalPrice: { 
+      type: Number, 
+      required: true 
+    },
+    status: { 
+      type: String, 
+      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], 
+      default: 'pending' 
+    }
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model('Order', orderSchema);
